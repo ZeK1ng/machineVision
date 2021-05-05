@@ -8,6 +8,7 @@ for i in range(4):
         k += 1
 a = np.array([[1, 1, 0]])
 b = np.array([[-1, 2, 5]]).T
+M_EIGEN = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
 
 
 def test0():
@@ -46,14 +47,30 @@ def test2():
 def test3():
     only_first_singular_value = get_singular_values(M, 1)
     print(only_first_singular_value)
+    first_two_singular_values = get_singular_values(M, 2)
+    print(first_two_singular_values)
+    assert only_first_singular_value[0] == first_two_singular_values[0]
 
+
+def test4(M):
+    val, vec = get_eigen_values_and_vectors(M[:, :3], 1)
+    print("First eigenvalue =", val[0])
+    print()
+    print("First eigenvector =", vec[0])
+    print()
+    assert len(vec) == 1
+    val, vec = get_eigen_values_and_vectors(M[:,:3], 2)
+    print("Eigenvalues =", val)
+    print()
+    print("Eigenvectors =", vec)
+    assert len(vec) == 2
 
 def myFun():
     # test0()
     # test1()
     # test2()
-    test3()
-
+    # test3()
+    test4(M_EIGEN)
 
 def dot_product(a, b):
     """Implement dot product between the two vectors: a and b.
@@ -152,9 +169,7 @@ def eigen_decomp(M):
     """
     w = None
     v = None
-    ### YOUR CODE HERE
-    pass
-    ### END YOUR CODE
+    w, v = np.linalg.eig(M)
     return w, v
 
 
@@ -177,16 +192,13 @@ def get_eigen_values_and_vectors(M, k):
     """
     eigenvalues = []
     eigenvectors = []
-    ### YOUR CODE HERE
-    pass
-    ### END YOUR CODE
+    w, v = eigen_decomp(M)
+    eigenvalues = w[:k]
+    eigenvectors = v[:k]
     return eigenvalues, eigenvectors
 
 
 def main():
-    # print(M)
-    # print(a)
-    # print(b)
     myFun()
 
 
