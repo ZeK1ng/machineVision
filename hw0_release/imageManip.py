@@ -5,14 +5,16 @@ from PIL import Image
 from skimage import color, io
 import matplotlib.pyplot as plt
 
+
 def showImage(image):
     imgplot = plt.imshow(image)
     plt.show()
 
+
 def test1():
     image1 = load("image1.jpg")
     image2 = load("image2.jpg")
-    #for pycharm
+    # for pycharm
     imgplot = plt.imshow(image1)
     plt.show()
     imgplot1 = plt.imshow(image2)
@@ -50,12 +52,68 @@ def test4():
     showImage(without_blue)
 
 
+def test5():
+    image1 = load("image1.jpg")
+
+    image_l = lab_decomposition(image1, 'L')
+    image_a = lab_decomposition(image1, 'A')
+    image_b = lab_decomposition(image1, 'B')
+
+    print("Below is the image with only the L channel.")
+    showImage(image_l)
+
+    print("Below is the image with only the A channel.")
+    showImage(image_a)
+
+    print("Below is the image with only the B channel.")
+    showImage(image_b)
+
+
+def test6():
+    image1 = load("image1.jpg")
+
+    image_h = hsv_decomposition(image1, 'H')
+    image_s = hsv_decomposition(image1, 'S')
+    image_v = hsv_decomposition(image1, 'V')
+
+    print("Below is the image with only the H channel.")
+    showImage(image_h)
+
+    print("Below is the image with only the S channel.")
+    showImage(image_s)
+
+    print("Below is the image with only the V channel.")
+    showImage(image_v)
+
+
+def test7():
+    image1 = load("image1.jpg")
+    image2 = load("image2.jpg")
+
+    image_mixed = mix_images(image1, image2, channel1='R', channel2='G')
+    showImage(image_mixed)
+
+    # Sanity Check: the sum of the image matrix should be 76421.98
+    np.sum(image_mixed)
+
+
+def test8():
+    image1 = load("image1.jpg")
+    mixed_quadrants = mix_quadrants(image1)
+    showImage(mixed_quadrants)
+
+
 def myFun():
     # test1()
     # test2()
     # test3()
-    test4()
-    
+    # test4()
+    # test5()
+    # test6()
+    # test7()
+    test8()
+
+
 def load(image_path):
     """Loads an image from a file path.
 
@@ -162,9 +220,14 @@ def lab_decomposition(image, channel):
 
     lab = color.rgb2lab(image)
     out = None
-
+    ind = 0
+    if channel == "A":
+        ind = 1
+    if channel == "B":
+        ind = 2
     ### YOUR CODE HERE
-    pass
+
+    out = lab[:, :, ind]
     ### END YOUR CODE
 
     return out
@@ -185,7 +248,13 @@ def hsv_decomposition(image, channel='H'):
     out = None
 
     ### YOUR CODE HERE
-    pass
+    ind = 0
+    if channel == "S":
+        ind = 1
+    if channel == "V":
+        ind = 2
+
+    out = hsv[:, :, ind]
     ### END YOUR CODE
 
     return out
@@ -211,7 +280,24 @@ def mix_images(image1, image2, channel1, channel2):
 
     out = None
     ### YOUR CODE HERE
-    pass
+    image1 = rgb_exclusion(image1, channel1)
+    image2 = rgb_exclusion(image2, channel2)
+    _, width, _ = image1.shape
+    first_half = image1[:, :width // 2]
+    second_half = image2[:, width // 2:]
+    out = np.concatenate((first_half, second_half), 1)
+    ### END YOUR CODE
+
+    return out
+
+
+def brighten_image(image):
+    # Brighthen the image using the function:
+    #             x_n = x_p^0.5
+    out = None
+
+    ### YOUR CODE HERE
+    out = np.power(image, 0.5)
     ### END YOUR CODE
 
     return out
@@ -241,8 +327,18 @@ def mix_quadrants(image):
 
     ### YOUR CODE HERE
     pass
-    ### END YOUR CODE
-
+    height, width, _ = image.shape
+    top_left_quadrant = image[:height // 2, :width // 2]
+    top_right_quadrant = image[:height // 2, width // 2:]
+    bottom_left_quadrant = image[height // 2:, :width // 2]
+    bottom_right_quadrant = image[height // 2:, width // 2:]
+    top_left_quadrant = rgb_exclusion(top_left_quadrant, "R")
+    top_right_quadrant = dim_image(top_right_quadrant)
+    bottom_left_quadrant = brighten_image(bottom_left_quadrant)
+    bottom_right_quadrant = rgb_exclusion(bottom_right_quadrant, "R")
+    top_part = np.concatenate((top_left_quadrant, top_right_quadrant), 1)
+    bottom_part = np.concatenate((bottom_left_quadrant, bottom_right_quadrant), 1)
+    out = np.concatenate((top_part, bottom_part))
     return out
 
 
