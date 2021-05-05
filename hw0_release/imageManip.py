@@ -3,8 +3,59 @@ import math
 import numpy as np
 from PIL import Image
 from skimage import color, io
+import matplotlib.pyplot as plt
+
+def showImage(image):
+    imgplot = plt.imshow(image)
+    plt.show()
+
+def test1():
+    image1 = load("image1.jpg")
+    image2 = load("image2.jpg")
+    #for pycharm
+    imgplot = plt.imshow(image1)
+    plt.show()
+    imgplot1 = plt.imshow(image2)
+    plt.show()
+    # display(image1)
+    # display(image2)
 
 
+def test2():
+    image1 = load("image1.jpg")
+    dimmed = dim_image(image1)
+    showImage(dimmed)
+
+
+def test3():
+    image1 = load("image1.jpg")
+    greyed = convert_to_grey_scale(image1)
+    showImage(greyed)
+
+
+def test4():
+    image1 = load("image1.jpg")
+
+    without_red = rgb_exclusion(image1, 'R')
+    without_blue = rgb_exclusion(image1, 'B')
+    without_green = rgb_exclusion(image1, 'G')
+
+    print("Below is the image without the red channel.")
+    showImage(without_red)
+
+    print("Below is the image without the green channel.")
+    showImage(without_green)
+
+    print("Below is the image without the blue channel.")
+    showImage(without_blue)
+
+
+def myFun():
+    # test1()
+    # test2()
+    # test3()
+    test4()
+    
 def load(image_path):
     """Loads an image from a file path.
 
@@ -20,7 +71,7 @@ def load(image_path):
 
     ### YOUR CODE HERE
     # Use skimage io.imread
-    pass
+    out = io.imread(image_path)
     ### END YOUR CODE
 
     # Let's convert the image to be between the correct range.
@@ -45,7 +96,7 @@ def dim_image(image):
     out = None
 
     ### YOUR CODE HERE
-    pass
+    out = 0.5 * np.square(image)
     ### END YOUR CODE
 
     return out
@@ -66,7 +117,7 @@ def convert_to_grey_scale(image):
     out = None
 
     ### YOUR CODE HERE
-    pass
+    out = color.rgb2grey(image)
     ### END YOUR CODE
 
     return out
@@ -86,7 +137,13 @@ def rgb_exclusion(image, channel):
     out = None
 
     ### YOUR CODE HERE
-    pass
+    ind = 0
+    if channel == "G":
+        ind = 1
+    if channel == "B":
+        ind = 2
+    out = np.array(image)
+    out[:, :, ind] = 0
     ### END YOUR CODE
 
     return out
@@ -187,3 +244,11 @@ def mix_quadrants(image):
     ### END YOUR CODE
 
     return out
+
+
+def main():
+    myFun()
+
+
+if __name__ == "__main__":
+    main()
