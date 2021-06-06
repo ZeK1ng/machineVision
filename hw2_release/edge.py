@@ -15,8 +15,9 @@ import scipy.stats as st
 import matplotlib.pyplot as plt
 
 
-def show_image(image):
+def show_image(image, title=""):
     imgplot = plt.imshow(image)
+    plt.title = title
     plt.show()
 
 
@@ -134,7 +135,6 @@ def partial_y(img):
     ### END YOUR CODE
 
 
-
 def gradient(img):
     """ Returns gradient magnitude and direction of input img.
 
@@ -155,9 +155,25 @@ def gradient(img):
 
     ### YOUR CODE HERE
     pass
+    G = np.sqrt(partial_y(img) ** 2 + partial_x(img) ** 2)
+    theta = np.arctan2(partial_y(img), partial_x(img) * 180 / np.pi)
     ### END YOUR CODE
 
-    return G, theta
+    return G, theta % 360
+
+
+def get_adjacent_list(G, y, x, curr_theta):
+    switcher = {
+        0: [G[y, x - 1], G[y, x + 1]],
+        45: [G[y - 1, x - 1], G[y + 1, x + 1]],
+        90: [G[y - 1, x], G[y + 1, x]],
+        135: [G[y - 1, x + 1], G[y + 1, x - 1]],
+        180: [G[y, x - 1], G[y, x + 1]],
+        225: [G[y - 1, x - 1], G[y + 1, x + 1]],
+        270: [G[y - 1, x], G[y + 1, x]],
+        315: [G[y - 1, x + 1], G[y + 1, x - 1]]
+    }
+    return switcher.get(curr_theta, None)
 
 
 def non_maximum_suppression(G, theta):
@@ -177,16 +193,24 @@ def non_maximum_suppression(G, theta):
     out = np.zeros((H, W))
 
     # Round the gradient direction to the nearest 45 degrees
-    theta = np.floor((theta + 22.5) / 45) * 45
+    theta = (np.floor((theta + 22.5) / 45) * 45) % 360
 
     ### BEGIN YOUR CODE
+
     pass
+    for y in range(1, H - 1):
+        for x in range(1, W - 1):
+            curr_theta = theta[y, x]
+            adjacent_list = get_adjacent_list(G, y, x, curr_theta)
+            currG = G[y][x]
+            if currG >= np.max(adjacent_list):
+                out[y][x] = currG
     ### END YOUR CODE
 
     return out
 
 
-def double_thresholding(img, high, low):
+def double_thresholding(img_nms, high, low):
     """
     Args:
         img: numpy array of shape (H, W) representing NMS edge response.
@@ -202,11 +226,13 @@ def double_thresholding(img, high, low):
             higher threshold and greater than the lower threshold.
     """
 
-    strong_edges = np.zeros(img.shape, dtype=np.bool)
-    weak_edges = np.zeros(img.shape, dtype=np.bool)
+    strong_edges = np.zeros(img_nms.shape, dtype=bool)
+    weak_edges = np.zeros(img_nms.shape, dtype=bool)
 
     ### YOUR CODE HERE
     pass
+    strong_edges = img_nms >= high
+    weak_edges = (img_nms > low) & (img_nms < high)
     ### END YOUR CODE
 
     return strong_edges, weak_edges
@@ -359,6 +385,7 @@ def generateSmoothed():
     smoothed = conv(img, kernel)
     return smoothed
 
+
 def testConv():
     kernel_size = 5
     sigma = 1.4
@@ -436,11 +463,54 @@ def testGradient():
     show_image(G)
 
 
+def testNonMaximum():
+    # Test input
+    smoothed = generateSmoothed()
+
+    G, theta = gradient(smoothed)
+    g = np.array(
+        [[0.4, 0.5, 0.6],
+         [0.3, 0.5, 0.7],
+         [0.4, 0.5, 0.6]]
+    )
+
+    # Print out non-maximum suppressed output
+    # varying theta
+    for angle in range(0, 180, 45):
+        print('Thetas:', angle)
+        t = np.ones((3, 3)) * angle  # Initialize theta
+        print(non_maximum_suppression(g, t))
+
+    nms = non_maximum_suppression(G, theta)
+    show_image(nms)
+    reference = np.load('references/iguana_non_max_suppressed.npy')
+    show_image(reference, "reference")
+    show_image(nms - reference, "nms-reference")
+
+
+def testDoubleThresholding():
+    smoothed = generateSmoothed()
+
+    G, theta = gradient(smoothed)
+    nms = non_maximum_suppression(G, theta)
+    low_threshold = 0.02
+    high_threshold = 0.03
+
+    strong_edges, weak_edges = double_thresholding(nms, high_threshold, low_threshold)
+    assert (np.sum(strong_edges & weak_edges) == 0)
+
+    edges = strong_edges * 1.0 + weak_edges * 0.5
+    show_image(strong_edges, "strong_edges")
+    show_image(edges, "edges")
+
+
 def main():
     # testGaussian()
     # testConv()
     # testPartial()
-    testGradient()
+    # testGradient()
+    # testNonMaximum()
+    testDoubleThresholding()
 
 
 if __name__ == "__main__":
