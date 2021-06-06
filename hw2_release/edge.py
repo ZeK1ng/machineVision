@@ -258,8 +258,8 @@ def get_neighbors(y, x, H, W):
 
     for i in (y - 1, y, y + 1):
         for j in (x - 1, x, x + 1):
-            if i >= 0 and i < H and j >= 0 and j < W:
-                if (i == y and j == x):
+            if 0 <= i < H and 0 <= j < W:
+                if i == y and j == x:
                     continue
                 neighbors.append((i, j))
 
@@ -284,7 +284,7 @@ def link_edges(strong_edges, weak_edges):
 
     H, W = strong_edges.shape
     indices = np.stack(np.nonzero(strong_edges)).T
-    edges = np.zeros((H, W), dtype=np.bool)
+    edges = np.zeros((H, W), dtype=bool)
 
     # Make new instances of arguments to leave the original
     # references intact
@@ -292,7 +292,18 @@ def link_edges(strong_edges, weak_edges):
     edges = np.copy(strong_edges)
 
     ### YOUR CODE HERE
-    pass
+    visited = np.zeros((H, W), bool)
+    stack = [(0, 0)]
+    while len(stack) != 0:
+        i, j = stack.pop(0)
+        if visited[i][j]:
+            continue
+        visited[i][j] = True
+        neighs = get_neighbors(i, j, H, W)
+        for next_i, next_j in neighs:
+            stack.append((next_i, next_j))
+        if np.any(edges[x][y] for x, y in neighs) and weak_edges[i][j]:
+            edges[i][j] = True
     ### END YOUR CODE
 
     return edges
@@ -311,7 +322,12 @@ def canny(img, kernel_size=5, sigma=1.4, high=20, low=15):
         edge: numpy array of shape(H, W).
     """
     ### YOUR CODE HERE
-    pass
+    kernel = gaussian_kernel(kernel_size, sigma)
+    smoothed = conv(img, kernel)
+    G, theta = gradient(smoothed)
+    nms = non_maximum_suppression(G, theta)
+    strong_edges, weak_edges = double_thresholding(nms, high, low)
+    edge = link_edges(strong_edges, weak_edges)
     ### END YOUR CODE
 
     return edge
@@ -504,13 +520,86 @@ def testDoubleThresholding():
     show_image(edges, "edges")
 
 
+def testLinkEdges():
+    test_strong = np.array(
+        [[1, 0, 0, 0],
+         [0, 0, 0, 0],
+         [0, 0, 0, 0],
+         [0, 0, 0, 1]],
+        dtype=bool
+    )
+
+    test_weak = np.array(
+        [[0, 0, 0, 1],
+         [0, 1, 0, 0],
+         [1, 0, 0, 0],
+         [0, 0, 1, 0]],
+        dtype=bool
+    )
+    smoothed = generateSmoothed()
+
+    G, theta = gradient(smoothed)
+    nms = non_maximum_suppression(G, theta)
+    low_threshold = 0.02
+    high_threshold = 0.03
+
+    strong_edges, weak_edges = double_thresholding(nms, high_threshold, low_threshold)
+    test_linked = link_edges(test_strong, test_weak)
+
+    show_image(test_strong, "Strong edges")
+    show_image(test_weak, "Weak edges")
+    show_image(test_linked, "Linked edges")
+
+    edges = link_edges(strong_edges, weak_edges)
+
+    show_image(edges)
+
+    reference = np.load('references/iguana_edge_tracking.npy')
+    show_image(reference)
+    show_image(edges ^ reference)
+
+
+def testCanny():
+    # Load image
+    img = io.imread('iguana.png', as_gray=True)
+
+    # Run Canny edge detector
+    edges = canny(img, kernel_size=5, sigma=1.4, high=0.03, low=0.02)
+    print(edges.shape)
+
+    show_image(edges)
+
+    reference = np.load('references/iguana_canny.npy')
+    show_image(reference)
+
+    show_image(edges ^ reference)
+
+
 def main():
-    # testGaussian()
-    # testConv()
-    # testPartial()
-    # testGradient()
-    # testNonMaximum()
+    print("-----Running Gaussian Test-----")
+    testGaussian()
+    print("-----Gaussian Test:Done-----")
+    print("-----Running Conv Test-----")
+    testConv()
+    print("-----Conv Test:Done-----")
+    print("-----Running Partial Test-----")
+    testPartial()
+    print("-----Partial Test:Done-----")
+    print("-----Running Gradient Test-----")
+    testGradient()
+    print("-----Gradient Test:Done-----")
+    print("-----Running NonMaximum -----")
+    testNonMaximum()
+    print("-----NonMaximum:Done-----")
+    print("-----Running DoubleThresholding -----")
     testDoubleThresholding()
+    print("-----DoubleThresholding:Done-----")
+    print("-----Running Test-----")
+    testLinkEdges()
+    print("-----LinkEdges:Done-----")
+    print("-----Running Canny-----")
+    testCanny()
+    print("-----Canny:Done-----")
 
 
 if __name__ == "__main__":
